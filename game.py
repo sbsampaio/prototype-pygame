@@ -5,6 +5,7 @@ import pygame
 
 from arrow import Arrow
 from character import Character
+from enemy import Enemy
 
 NUM_CHARACTERS = 5
 MENU_SCALE_FACTOR = 4
@@ -41,7 +42,10 @@ class Game:
         Character((289, 510), "water"),
         Character((583, 510), "leaf"),
     ]
+    selected_characters = []
+    battle_array: list
     title = pygame.image.load("./images/main_menu/introbattle_title.png")
+    turn: str = "player"
 
     def __init__(self, width: int, height: int) -> None:
         self._running = True
@@ -49,7 +53,7 @@ class Game:
         self.window_size = self.width, self.height = width, height
         self._selection_arrow = Arrow()
         self._idx = 0
-        self._num_selected = 0
+        self._selected_chars = 0
 
     def on_init(self) -> None:
         pygame.init()
@@ -76,8 +80,10 @@ class Game:
                 self._idx = 5
             self._idx -= 1
         if pressed_keys[pygame.K_z]:
+            if not self.characters[self._idx].selected:
+                self._selected_chars += 1
+                self.selected_characters.append(self.characters[self._idx])
             self.characters[self._idx].select()
-            self._num_selected += 1
 
     def cleanup(self):
         pygame.quit()
@@ -92,7 +98,56 @@ class Game:
         self._selection_arrow.render(self._display_surf)
 
     def on_battle(self):
-        drop_shadow_text(self._display_surf, "ATTACK", 36, (71, 602))
+        if self._selection_arrow.stage == 0:
+            self._selection_arrow.on_battle()
+            for i in range(3):
+                self.selected_characters[i].on_battle = True
+                self.selected_characters[i].portrait = (
+                    pygame.transform.scale_by(  # noqa: E501
+                        pygame.image.load(
+                            f"./images/characters/{self.selected_characters[i].element}/{self.selected_characters[i].element}_idle.png"  # noqa: E501
+                        ),
+                        3,
+                    )
+                )
+                self.selected_characters[i].position = (
+                    20 + i * 321,
+                    602,
+                )
+
+            self.selected_characters[0].portrait_position = (-197, -109)
+            self.selected_characters[1].portrait_position = (-326, 0)
+            self.selected_characters[2].portrait_position = (-197, 91)
+            self.enemies = [Enemy(i + 1, (i + 1 * 200, 0)) for i in range(2)]
+
+        pygame.draw.rect(
+            self._display_surf, (180, 180, 180), (20, 504, 678, 245)
+        )  # noqa: E501
+        pygame.draw.rect(
+            self._display_surf, (180, 180, 180), (721, 504, 278, 245)
+        )  # noqa: E501
+        drop_shadow_text(
+            self._display_surf, f"{self.turn.upper()}'S TURN", 34, (71, 529)
+        )
+        drop_shadow_text(self._display_surf, "ATTACK", 32, (71, 602))
+        drop_shadow_text(self._display_surf, "DEFENSE", 32, (392, 602))
+        drop_shadow_text(self._display_surf, "INSIGHT", 32, (71, 675))
+        drop_shadow_text(self._display_surf, "SKILL", 32, (392, 675))
+        for i in range(3):
+            self.selected_characters[i].render(self._display_surf)
+            drop_shadow_text(
+                self._display_surf,
+                self.selected_characters[i].name,
+                18,
+                (734, 528 + i * 79),
+            )
+            drop_shadow_text(
+                self._display_surf,
+                f"{self.selected_characters[i].health}/{self.selected_characters[i].max_health}",  # noqa: E501
+                18,
+                (868, 528 + i * 79),
+            )
+        self._selection_arrow.render(self._display_surf)
 
     def execute(self):
         if self.on_init() is False:
@@ -104,7 +159,7 @@ class Game:
 
             self._display_surf.blit(self.background, (0, 0))
 
-            if self._num_selected > 3:
+            if self._selected_chars >= 3:
                 self.on_battle()
             else:
                 self.on_main_menu()
