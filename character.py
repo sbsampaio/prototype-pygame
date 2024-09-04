@@ -1,6 +1,9 @@
+from __future__ import annotations
 from typing import Tuple
 
 import pygame
+
+from enemy import Enemy
 
 MENU_SCALE_FACTOR = 4
 
@@ -14,31 +17,31 @@ class Character:
 
     def __select_element_attributes(self, element: str):
         if element == "fire":
-            self.health = self.max_health = 100
+            self.health = self.max_health = 10
             self.attack = 10
             self.defense = 5
             self.speed = 6
             self.name = "KNIGHT"
         elif element == "crystal":
-            self.health = self.max_health = 100
+            self.health = self.max_health = 10
             self.attack = 5
             self.defense = 10
             self.speed = 4
             self.name = "MAULER"
         elif element == "water":
-            self.health = self.max_health = 80
+            self.health = self.max_health = 8
             self.attack = 15
             self.defense = 5
             self.speed = 5
             self.name = "MAGE"
         elif element == "wind":
-            self.health = self.max_health = 100
+            self.health = self.max_health = 10
             self.attack = 5
             self.defense = 5
             self.speed = 10
             self.name = "ROGUE"
         else:
-            self.health = self.max_health = 90
+            self.health = self.max_health = 9
             self.attack = 15
             self.defense = 5
             self.speed = 7
@@ -78,3 +81,17 @@ class Character:
             self.portrait.set_alpha(255)
 
         display_surface.blit(self.portrait, self.portrait_position)
+
+    def __attack(self, target: Enemy | Character):
+        target.health -= int(self.attack * (50 / (50 + target.defense)))
+
+    def defend(self):
+        self.defense *= 1.3
+
+    def action(self, command: str, target: Enemy | Character | None = None):
+        if command == "ATTACK":
+            self.__attack(target)
+        elif command == "DEFEND":
+            self.defend()
+        else:
+            pass
